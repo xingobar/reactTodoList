@@ -1,0 +1,4 @@
+.line-through > span {
+	text-decoration: line-through;
+	color: gray;
+}
