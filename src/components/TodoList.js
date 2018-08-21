@@ -2,44 +2,26 @@ import React, { Component } from 'react';
 import Grid from '@material-ui/core/Grid';
 import Input from '@material-ui/core/Input';
 import TodoItem from './TodoItem';
-
-import Radio from '@material-ui/core/Radio';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import FormGroup from '@material-ui/core/FormGroup';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import Filter from './Filter';
+import FilterContainer from '../container/FilterContainer';
 
 class TodoList extends Component {
 	constructor(props) {
 		super(props);
 
 		var _this = this;
-
-		_this.state = {
-			items: [],
-			selectedValue: '',
-			tmpItems: []
-		};
 		_this._handleKeyPress = _this._handleKeyPress.bind(_this);
 		_this._handleToggler = _this._handleToggler.bind(_this);
-		_this._handleChange = _this._handleChange.bind(_this);
+	}
 
-		axios
-			.get('http://localhost:3003/todolist')
-			.then((response) => {
-				let result = response.data.result;
-				_this.setState({
-					items: result,
-					tmpItems: result
-				});
-			})
-			.catch((err) => {
-				Swal({
-					title: 'System busy',
-					type: 'warning'
-				});
-				console.log(`err => ${err}`);
-			});
+	componentDidMount() {
+		this.props.fetchTodo();
+	}
+
+	componentDidUpdate() {
+		this._showDialog();
 	}
 
 	render() {
@@ -49,43 +31,8 @@ class TodoList extends Component {
 					<h1>TodoList</h1>
 				</Grid>
 
-				<Grid container item xs={12} alignItems="center" justify="center" style={{ display: 'flex' }}>
-					<FormGroup row>
-						<FormControlLabel
-							value="all"
-							control={
-								<Radio
-									color="primary"
-									onChange={this._handleChange}
-									checked={this.state.selectedValue === 'all'}
-								/>
-							}
-							label="全部"
-						/>
-						<FormControlLabel
-							value="complete"
-							control={
-								<Radio
-									color="primary"
-									onChange={this._handleChange}
-									checked={this.state.selectedValue === 'complete'}
-								/>
-							}
-							label="已完成"
-						/>
-						<FormControlLabel
-							value="uncomplete"
-							control={
-								<Radio
-									color="primary"
-									onChange={this._handleChange}
-									checked={this.state.selectedValue === 'uncomplete'}
-								/>
-							}
-							label="未完成"
-						/>
-					</FormGroup>
-				</Grid>
+				{/* <Filter /> */}
+				<FilterContainer />
 
 				<Grid container item xs={12} alignItems="center" justify="center" style={{ display: 'flex' }}>
 					<Input
@@ -97,7 +44,7 @@ class TodoList extends Component {
 					/>
 				</Grid>
 				<Grid container item xs={12} alignItems="center" justify="center" style={{ display: 'flex' }}>
-					<TodoItem items={this.state.tmpItems} _handleToggler={this._handleToggler} />
+					<TodoItem items={this.props.tmpItems.array} _handleToggler={this._handleToggler} />
 				</Grid>
 			</Grid>
 		);
@@ -109,122 +56,48 @@ class TodoList extends Component {
 			let value = e.target.value;
 			let uid = new Date().getTime();
 
-			var items = this.state.items;
-
-			axios
-				.post('http://localhost:3003/add/todolist', {
-					uid: uid,
-					value: value,
-					complete: false
-				})
-				.then((response) => {
-					var result = parseInt(response.data.result);
-
-					switch (result) {
-						case 1:
-							items.push({
-								uid: uid,
-								value: value,
-								complete: false
-							});
-
-							_this.setState({
-								items: items,
-								tmpItems: items
-							});
-
-							Swal({
-								text: 'Add Success',
-								type: 'success'
-							});
-							break;
-						case -1:
-							Swal({
-								text: 'Pass Parameter Not Matched',
-								type: 'warning'
-							});
-							break;
-						case -2:
-							Swal({
-								text: 'Add Failed',
-								type: 'warning'
-							});
-							break;
-					}
-				})
-				.catch((err) => {
-					Swal({
-						text: 'Add Failed',
-						type: 'warning'
-					});
-				});
+			this.props.createTodo({
+				uid: uid.toString(),
+				value: value,
+				complete: false
+			});
 		}
 	}
 
 	_handleToggler(e, index) {
-		var tmp = this.state.items.slice(0);
+		var tmp = this.props.items.array.slice(0);
 		tmp[index].complete = e.target.checked;
-		axios
-			.post(`http://localhost:3003/update/todolist/${tmp[index].uid}`, {
-				complete: e.target.checked
-			})
-			.then((response) => {
-				var result = parseInt(response.data.result);
-				switch (result) {
-					case 1:
-						var _this = this;
-						_this.setState({
-							items: tmp
-						});
-						Swal({
-							text: 'Update Success',
-							type: 'success'
-						});
-						break;
-					case -1:
-						Swal({
-							text: 'Pass Parameter Not Matched',
-							type: 'warning'
-						});
-						break;
-					case -2:
-						Swal({
-							text: 'Add Failed',
-							type: 'warning'
-						});
-						break;
-				}
-			})
-			.catch((err) => {
-				console.log(err);
-				Swal({
-					text: 'Add Failed',
-					type: 'warning'
-				});
-			});
+		this.props.toggleTodo(tmp[index]);
 	}
 
-	_handleChange = (event) => {
-		var targetValue = event.target.value;
-
-		this.setState({
-			selectedValue: targetValue
-		});
-
-		var items = this.state.items.filter((item) => {
-			if (targetValue === 'all') {
-				return item;
-			} else if (targetValue === 'complete') {
-				return item.complete;
-			} else {
-				return !item.complete;
-			}
-		});
-
-		this.setState({
-			tmpItems: items
-		});
-	};
+	_showDialog() {
+		switch (this.props.requestCode) {
+			case 1:
+				Swal({
+					text: 'Request Success',
+					type: 'success'
+				});
+				break;
+			case -1:
+				Swal({
+					text: 'Pass Parameter Not Matched',
+					type: 'warning'
+				});
+				break;
+			case -2:
+				Swal({
+					text: 'Request Failed',
+					type: 'warning'
+				});
+				break;
+			case -3:
+				Swal({
+					text: 'System Busy',
+					type: 'warning'
+				});
+				break;
+		}
+	}
 }
 
 export default TodoList;

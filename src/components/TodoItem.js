@@ -6,6 +6,7 @@ import Checkbox from '@material-ui/core/Checkbox';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 // import PropTypes from 'prop-types';
 import '../css/TodoItem.css';
+import _ from 'lodash';
 
 class TodoItem extends Component {
 	// constructor(props) {
@@ -13,16 +14,27 @@ class TodoItem extends Component {
 	// }
 
 	render() {
+		let isArray = _.isArray(this.props.items);
+
 		return (
 			<List style={{ width: '200px' }}>
-				{this.props.items.map((item, index) => (
-					<ListItem key={item.uid} style={{ backgroundColor: '#e0dfdfee', marginBottom: '10px' }}>
-						<ListItemText className={{ 'line-through': item.complete }} primary={`${item.value}`} />
-						<ListItemSecondaryAction>
-							<Checkbox onChange={(e) => this.props._handleToggler(e, index)} checked={item.complete} />
-						</ListItemSecondaryAction>
+				{isArray ? (
+					this.props.items.map((item, index) => (
+						<ListItem key={item.uid} style={{ backgroundColor: '#e0dfdfee', marginBottom: '10px' }}>
+							<ListItemText className={{ 'line-through': item.complete }} primary={`${item.value}`} />
+							<ListItemSecondaryAction>
+								<Checkbox
+									onChange={(e) => this.props._handleToggler(e, index)}
+									checked={item.complete}
+								/>
+							</ListItemSecondaryAction>
+						</ListItem>
+					))
+				) : (
+					<ListItem>
+						<ListItemText>無資料</ListItemText>
 					</ListItem>
-				))}
+				)}
 			</List>
 		);
 	}
